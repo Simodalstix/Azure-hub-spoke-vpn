@@ -39,3 +39,10 @@ variable "private_dns_zone_name" {
   type        = string
   default     = "internal.corp"
 }
+
+# SHARED KEY
+variable "vpn_shared_key" {
+  description = "The shared key (PSK) for the Site-to-Site VPN connection."
+  type        = string
+  sensitive   = true
+}

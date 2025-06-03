@@ -123,8 +123,8 @@ resource "azurerm_public_ip" "hub_vpn_gateway_pip" {
   name                = "${var.prefix}-hub-vpngw-pip"
   location            = azurerm_resource_group.network_rg.location
   resource_group_name = azurerm_resource_group.network_rg.name
-  allocation_method   = "Static" # Or Static, depending on requirements
-  sku                 = "Standard"   # Or Standard/VpnGw1/2/3/4/5 for higher throughput
+  allocation_method   = "Static"   # Or Static, depending on requirements
+  sku                 = "Standard" # Or Standard/VpnGw1/2/3/4/5 for higher throughput
   tags = {
     Environment = "Hub"
     Service     = "VPNGateway"
@@ -210,24 +210,24 @@ resource "azurerm_subnet" "dev_default_subnet" {
 
 # VNet Peering: Dev to Hub
 resource "azurerm_virtual_network_peering" "dev_to_hub_peering" {
-  name                      = "${var.prefix}-dev-to-hub-peering"
-  resource_group_name       = azurerm_resource_group.network_rg.name
-  virtual_network_name      = azurerm_virtual_network.dev_vnet.name
-  remote_virtual_network_id = azurerm_virtual_network.hub_vnet.id
-  allow_forwarded_traffic   = true
+  name                         = "${var.prefix}-dev-to-hub-peering"
+  resource_group_name          = azurerm_resource_group.network_rg.name
+  virtual_network_name         = azurerm_virtual_network.dev_vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.hub_vnet.id
+  allow_forwarded_traffic      = true
   allow_virtual_network_access = true
   allow_gateway_transit        = true # Allow spoke to use hub's gateway
 }
 
 # VNet Peering: Hub to Dev
 resource "azurerm_virtual_network_peering" "hub_to_dev_peering" {
-  name                      = "${var.prefix}-hub-to-dev-peering"
-  resource_group_name       = azurerm_resource_group.network_rg.name
-  virtual_network_name      = azurerm_virtual_network.hub_vnet.name
-  remote_virtual_network_id = azurerm_virtual_network.dev_vnet.id
-  allow_forwarded_traffic   = true
+  name                         = "${var.prefix}-hub-to-dev-peering"
+  resource_group_name          = azurerm_resource_group.network_rg.name
+  virtual_network_name         = azurerm_virtual_network.hub_vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.dev_vnet.id
+  allow_forwarded_traffic      = true
   allow_virtual_network_access = true
-  use_remote_gateways        = false # Hub does not use spokes gateway
+  use_remote_gateways          = false # Hub does not use spokes gateway
 }
 
 # Spoke 2: Prod VNet
@@ -252,24 +252,24 @@ resource "azurerm_subnet" "prod_default_subnet" {
 
 # VNet Peering: Prod to Hub
 resource "azurerm_virtual_network_peering" "prod_to_hub_peering" {
-  name                      = "${var.prefix}-prod-to-hub-peering"
-  resource_group_name       = azurerm_resource_group.network_rg.name
-  virtual_network_name      = azurerm_virtual_network.prod_vnet.name
-  remote_virtual_network_id = azurerm_virtual_network.hub_vnet.id
-  allow_forwarded_traffic   = true
+  name                         = "${var.prefix}-prod-to-hub-peering"
+  resource_group_name          = azurerm_resource_group.network_rg.name
+  virtual_network_name         = azurerm_virtual_network.prod_vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.hub_vnet.id
+  allow_forwarded_traffic      = true
   allow_virtual_network_access = true
   allow_gateway_transit        = true # Allow spoke to use hub's gateway
 }
 
 # VNet Peering: Hub to Prod
 resource "azurerm_virtual_network_peering" "hub_to_prod_peering" {
-  name                      = "${var.prefix}-hub-to-prod-peering"
-  resource_group_name       = azurerm_resource_group.network_rg.name
-  virtual_network_name      = azurerm_virtual_network.hub_vnet.name
-  remote_virtual_network_id = azurerm_virtual_network.prod_vnet.id
-  allow_forwarded_traffic   = true
+  name                         = "${var.prefix}-hub-to-prod-peering"
+  resource_group_name          = azurerm_resource_group.network_rg.name
+  virtual_network_name         = azurerm_virtual_network.hub_vnet.name
+  remote_virtual_network_id    = azurerm_virtual_network.prod_vnet.id
+  allow_forwarded_traffic      = true
   allow_virtual_network_access = true
-  use_remote_gateways        = false # Hub does not use spokes gateway
+  use_remote_gateways          = false # Hub does not use spokes gateway
 }
 
 # --- Private DNS Zones ---
@@ -348,13 +348,13 @@ resource "azurerm_subnet_route_table_association" "prod_subnet_rt_association" {
 # You'd need to configure your on-premises device (pfSense/strongSwan)
 # with the details from the Azure Local Network Gateway and VPN Gateway.
 
-/*
+
 resource "azurerm_local_network_gateway" "onprem_lng" {
   name                = "${var.prefix}-onprem-lng"
   resource_group_name = azurerm_resource_group.network_rg.name
   location            = azurerm_resource_group.network_rg.location
-  gateway_ip_address  = "YOUR_ONPREM_PUBLIC_IP" # Replace with your on-premises public IP
-  address_space       = ["192.168.10.0/24"] # Replace with your on-premises network CIDR
+  gateway_address     = "13.239.236.178"  # on-premises public IP (AWS EC2)
+  address_space       = ["172.31.0.0/16"] # on-premises network CIDR (AWS VPC)
 
   tags = {
     Environment = "Hybrid"
@@ -363,17 +363,16 @@ resource "azurerm_local_network_gateway" "onprem_lng" {
 }
 
 resource "azurerm_virtual_network_gateway_connection" "s2s_connection" {
-  name                = "${var.prefix}-s2s-connection"
-  resource_group_name = azurerm_resource_group.network_rg.name
-  location            = azurerm_resource_group.network_rg.location
-  type                = "Ipsec"
+  name                       = "${var.prefix}-s2s-connection"
+  resource_group_name        = azurerm_resource_group.network_rg.name
+  location                   = azurerm_resource_group.network_rg.location
+  type                       = "IPsec"
   virtual_network_gateway_id = azurerm_virtual_network_gateway.hub_vpn_gateway.id
   local_network_gateway_id   = azurerm_local_network_gateway.onprem_lng.id
-  shared_key                 = "YourSharedKey" # IMPORTANT: Replace with a strong, complex shared key
+  shared_key                 = var.vpn_shared_key
 
   tags = {
     Environment = "Hybrid"
     Service     = "VPNGatewayConnection"
   }
 }
-*/
