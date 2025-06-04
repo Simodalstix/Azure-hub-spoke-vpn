@@ -1,4 +1,4 @@
-# Azure Hub-Spoke Network with Site-to-Site VPN to AWS (strongSwan)
+# Azure Hub-Spoke Network with Site-to-Site VPN to AWS (strongSwan) - with screenshots below
 
 This project deploys a robust network architecture in Microsoft Azure using the Hub-Spoke topology, and establishes a secure Site-to-Site (S2S) VPN connection to an Amazon Web Services (AWS) Virtual Private Cloud (VPC) running a strongSwan IPSec VPN server. All infrastructure is defined and managed using Terraform.
 
@@ -115,9 +115,75 @@ This architecture addresses several key networking and security requirements in 
       ```
     - **Note:** The VPN Gateway connection provisioning can take 20-45 minutes.
 
-6.  **Configure strongSwan on AWS EC2 (Next Step after Azure provisioning is complete!):**
-    - (Details will be provided in the next steps of this guide once Azure provisioning is done.)
-    - You will use the Public IP of your Azure VPN Gateway and the Azure Hub VNet CIDR for this configuration.
+## 🛠 strongSwan VPN Configuration on AWS EC2
+
+Originally, I planned to simulate an on-premises VPN from my apartment. But my ISP uses Carrier-Grade NAT (CGNAT), which meant I couldn’t expose a public IP to receive incoming VPN connections.
+
+Instead of shelving the idea, I pivoted — and spun up an AWS EC2 instance to act as the on-prem endpoint. This turned the project into a practical **multi-cloud lab**, connecting Azure and AWS over a real site-to-site IPsec tunnel.
+
+The EC2 instance runs strongSwan, which manages the IPsec connection back to Azure.
+
+### 1. Install strongSwan
+
+```bash
+sudo apt update
+sudo apt install strongswan strongswan-pki -y
+```
+
+### 2. Configure `/etc/ipsec.conf`
+
+```conf
+config setup
+  charondebug="ike 2, knl 2, cfg 2, net 2, esp 2, dmn 2, mgr 2, enc 2"
+  strictcrlpolicy=no
+  uniqueids=no
+
+conn azure
+  type=tunnel
+  authby=psk
+  left=%defaultroute                # EC2's public IP
+  leftid=13.239.236.178
+  leftsubnet=172.31.0.0/16
+  right=4.198.91.154                # Azure VPN Gateway public IP
+  rightsubnet=10.20.0.0/16
+  ike=aes256-sha256-modp1024!
+  esp=aes256-sha256!
+  auto=start
+  keyexchange=ikev2
+  dpddelay=10s
+  dpdtimeout=30s
+  dpdaction=restart
+  aggressive=no
+  fragmentation=yes
+  forceencaps=yes
+  mark=%unique
+```
+
+### 3. Add the shared key to `/etc/ipsec.secrets`
+
+```conf
+13.239.236.178 4.198.91.154 : PSK "YOUR_SHARED_KEY"
+```
+
+> 🔐 Make sure the PSK matches the value used in Azure’s VPN connection.
+
+### 4. Enable and start the service
+
+```bash
+sudo ipsec restart
+sudo ipsec statusall
+```
+
+---
+
+### ✅ Troubleshooting
+
+If traffic isn't flowing but the tunnel is up:
+
+- Check `/var/log/syslog` or `sudo journalctl -u strongswan`
+- Use `tcpdump -n -i any icmp`
+- Check NSG/SG rules
+- Ensure VNet peering has `use_remote_gateways = true`
 
 ## Cleanup
 
@@ -126,3 +192,35 @@ To destroy all provisioned Azure resources and avoid incurring costs:
 ```bash
 terraform destroy
 ```
+
+## 📸 Lab Validation Screenshots
+
+**AWS Security Group Inbound Rules**
+
+The EC2 instance is configured to allow UDP ports 500 and 4500 (for IPsec) and TCP port 22 (SSH) from Azure. Outbound traffic is unrestricted.
+
+![aws-sg-rules](./screenshots/aws-sg-rules.png)
+
+---
+
+**Azure NSG Inbound Rules for the Spoke Subnet**
+
+This NSG allows ICMP (ping) traffic from the AWS subnet and SSH traffic from Azure Bastion.
+
+![azure-nsg-rules](./screenshots/azure-nsg-rules.png)
+
+---
+
+**VPN Tunnel Established and Ping to Azure VM**
+
+This screenshot shows the IPsec tunnel established (`ipsec statusall`) and successful ping responses from the Azure production spoke VM (`10.20.0.4`).
+
+![vpn-tunnel-and-ping](./screenshots/VPN-tunnel-and-ping.png)
+
+---
+
+**Ping from Azure to AWS EC2 via Bastion**
+
+This shows the reverse ping test — from the Azure VM (accessed via Azure Bastion) back to the AWS EC2 instance (`172.31.9.161`).
+
+![ping-from-bastion](./screenshots/ping-from-bastion.png)
