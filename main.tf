@@ -51,7 +51,7 @@ resource "azurerm_subnet" "hub_azure_bastion_subnet" {
   name                 = "AzureBastionSubnet" # Required name for Azure Bastion
   resource_group_name  = azurerm_resource_group.network_rg.name
   virtual_network_name = azurerm_virtual_network.hub_vnet.name
-  address_prefixes     = ["10.0.3.0/26"] # Pick an unused /26 range within your /16 Hub VNet
+  address_prefixes     = ["10.0.3.0/26"] # Pick an unused /26 range within the /16 Hub VNet
 }
 
 resource "azurerm_subnet" "hub_shared_services_subnet" {
@@ -74,19 +74,18 @@ resource "azurerm_public_ip" "azure_firewall_pip" {
   }
 }
 
-# Azure Firewall Policy (Recommended for new deployments)
+# Azure Firewall Policy
 resource "azurerm_firewall_policy" "hub_fw_policy" {
   name                = "${var.prefix}-hub-fw-policy"
   resource_group_name = azurerm_resource_group.network_rg.name
   location            = azurerm_resource_group.network_rg.location
 
-  # Example rule for outbound access (e.g., allowing HTTP/HTTPS)
-  # In a real scenario, you'd have more granular rules.
+
   dns {
     proxy_enabled = true
     servers = [
-      "8.8.8.8", # Google DNS
-      "1.1.1.1"  # Cloudflare DNS
+      "8.8.8.8",
+      "1.1.1.1"
     ]
   }
 
@@ -172,7 +171,7 @@ resource "azurerm_bastion_host" "hub_bastion_host" {
   name                = "${var.prefix}-hub-bastion"
   location            = azurerm_resource_group.network_rg.location
   resource_group_name = azurerm_resource_group.network_rg.name
-  sku                 = "Basic" # Or Standard
+  sku                 = "Standard" # Or Standard
 
   ip_configuration {
     name                 = "IpConfig"
@@ -250,6 +249,53 @@ resource "azurerm_subnet" "prod_default_subnet" {
   address_prefixes     = [cidrsubnet(var.prod_vnet_cidr, 8, 0)] # /24 subnet
 }
 
+# NSG for Prod Spoke Subnet 
+resource "azurerm_network_security_group" "spoke_nsg_prod" {
+  name                = "${var.prefix}-spoke-nsg-prod"
+  location            = azurerm_resource_group.network_rg.location
+  resource_group_name = azurerm_resource_group.network_rg.name
+
+  # Allow inbound SSH/RDP from Azure Bastion
+  security_rule {
+    name      = "AllowBastionSSH"
+    priority  = 100
+    direction = "Inbound"
+    access    = "Allow"
+    protocol  = "Tcp"
+    # Source is the Bastion Subnet CIDR
+    source_address_prefix      = azurerm_subnet.hub_azure_bastion_subnet.address_prefixes[0]
+    destination_address_prefix = "*"
+    source_port_range          = "*"
+    destination_port_range     = "22" # For Linux VMs (SSH)
+    description                = "Allow SSH from Azure Bastion"
+  }
+
+  # Allow ICMP (Ping) from AWS VPC CIDR
+  security_rule {
+    name                       = "AllowPingFromAWS"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Icmp"
+    source_address_prefix      = "172.31.0.0/16" # AWS VPC CIDR
+    destination_address_prefix = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    description                = "Allow ICMP from AWS VPC for VPN testing"
+  }
+
+  tags = {
+    Environment = "Prod"
+    Service     = "NetworkSecurityGroup"
+  }
+}
+
+# --- Associate Prod Spoke Subnet with the NSG ---
+resource "azurerm_subnet_network_security_group_association" "prod_subnet_nsg_association" {
+  subnet_id                 = azurerm_subnet.prod_default_subnet.id
+  network_security_group_id = azurerm_network_security_group.spoke_nsg_prod.id
+}
+
 # VNet Peering: Prod to Hub
 resource "azurerm_virtual_network_peering" "prod_to_hub_peering" {
   name                         = "${var.prefix}-prod-to-hub-peering"
@@ -258,8 +304,11 @@ resource "azurerm_virtual_network_peering" "prod_to_hub_peering" {
   remote_virtual_network_id    = azurerm_virtual_network.hub_vnet.id
   allow_forwarded_traffic      = true
   allow_virtual_network_access = true
-  allow_gateway_transit        = true # Allow spoke to use hub's gateway
+  use_remote_gateways          = true # ✅ spoke uses hub's VPN
+  depends_on                   = [azurerm_virtual_network_peering.hub_to_prod_peering]
+
 }
+
 
 # VNet Peering: Hub to Prod
 resource "azurerm_virtual_network_peering" "hub_to_prod_peering" {
@@ -269,8 +318,9 @@ resource "azurerm_virtual_network_peering" "hub_to_prod_peering" {
   remote_virtual_network_id    = azurerm_virtual_network.prod_vnet.id
   allow_forwarded_traffic      = true
   allow_virtual_network_access = true
-  use_remote_gateways          = false # Hub does not use spokes gateway
+  allow_gateway_transit        = true # ✅ hub advertises its VPN
 }
+
 
 # --- Private DNS Zones ---
 

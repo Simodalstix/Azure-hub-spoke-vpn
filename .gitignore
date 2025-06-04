@@ -9,3 +9,5 @@ crash.log
 
 .DS_Store # macOS
 Thumbs.db # Windows
+
+expansion.md

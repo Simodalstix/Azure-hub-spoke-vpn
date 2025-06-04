@@ -46,3 +46,13 @@ variable "vpn_shared_key" {
   type        = string
   sensitive   = true
 }
+
+variable "ssh_public_key_path" {
+  description = "Absolute path to your SSH public key on this machine"
+  type        = string
+  default     = "/home/simoda/.ssh/id_rsa.pub" # no function call here
+}
+
+variable "admin_username" {
+  default = "azureuser"
+}
