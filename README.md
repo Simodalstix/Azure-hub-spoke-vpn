@@ -4,6 +4,8 @@ This project deploys a robust network architecture in Microsoft Azure using the 
 
 **Personal Context:** Initially, the goal was to simulate an "on-premises" VPN connection from my home network. However, due to Carrier-Grade NAT (CGNAT) issues with my home IP address, a direct connection wasn't feasible. This led to a pivot: instead of a direct home VPN, I leveraged an AWS EC2 instance to act as my "on-premises" VPN endpoint. This challenge unexpectedly transformed the project into an even more exciting **hybrid cloud** scenario, demonstrating seamless and secure connectivity between Azure and AWS.
 
+![azure hub spoke diagram](./screenshots/azure-hub-spoke-vpn.png)
+
 ## What This Project Builds
 
 This Terraform configuration sets up the following core components:
