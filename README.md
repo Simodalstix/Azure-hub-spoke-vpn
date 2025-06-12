@@ -1,6 +1,6 @@
 # Azure Hub-Spoke Network with Site-to-Site VPN to AWS (strongSwan) - with screenshots below
 
-This project deploys a robust network architecture in Microsoft Azure using the Hub-Spoke topology, and establishes a secure Site-to-Site (S2S) VPN connection to an Amazon Web Services (AWS) Virtual Private Cloud (VPC) running a strongSwan IPSec VPN server. All infrastructure is defined and managed using Terraform.
+This project deploys a robust network architecture in Microsoft Azure using the Hub-Spoke topology, and establishes a secure Site-to-Site (S2S) VPN connection to an Amazon Web Services (AWS) Virtual Private Cloud (VPC) running a strongSwan IPSec VPN server. All infrastructure is defined and managed using Terraform, except the Azure VM and the AWS EC2 instance which were manually provisioned.
 
 **Personal Context:** Initially, the goal was to simulate an "on-premises" VPN connection from my home network. However, due to Carrier-Grade NAT (CGNAT) issues with my home IP address, a direct connection wasn't feasible. This led to a pivot: instead of a direct home VPN, I leveraged an AWS EC2 instance to act as my "on-premises" VPN endpoint. This challenge unexpectedly transformed the project into an even more exciting **hybrid cloud** scenario, demonstrating seamless and secure connectivity between Azure and AWS.
 
