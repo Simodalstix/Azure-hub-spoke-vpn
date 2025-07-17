@@ -117,7 +117,7 @@ This architecture addresses several key networking and security requirements in 
       ```
     - **Note:** The VPN Gateway connection provisioning can take 20-45 minutes.
 
-## 🛠 strongSwan VPN Configuration on AWS EC2
+## strongSwan VPN Configuration on AWS EC2
 
 Originally, I planned to simulate an on-premises VPN from my apartment. But my ISP uses Carrier-Grade NAT (CGNAT), which meant I couldn’t expose a public IP to receive incoming VPN connections.
 
@@ -167,7 +167,7 @@ conn azure
 13.239.236.178 4.198.91.154 : PSK "YOUR_SHARED_KEY"
 ```
 
-> 🔐 Make sure the PSK matches the value used in Azure’s VPN connection.
+> Make sure the PSK matches the value used in Azure’s VPN connection.
 
 ### 4. Enable and start the service
 
@@ -178,7 +178,7 @@ sudo ipsec statusall
 
 ---
 
-### ✅ Troubleshooting
+### Troubleshooting
 
 If traffic isn't flowing but the tunnel is up:
 
@@ -195,7 +195,7 @@ To destroy all provisioned Azure resources and avoid incurring costs:
 terraform destroy
 ```
 
-## 📸 Lab Validation Screenshots
+## Lab Validation Screenshots
 
 **AWS Security Group Inbound Rules**
 
