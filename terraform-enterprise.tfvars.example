@@ -1,0 +1,30 @@
+# Enterprise Landing Zone Configuration Example
+# Copy this file to terraform-enterprise.tfvars and customize
+
+# Core Configuration
+prefix      = "entlz"
+environment = "prod"
+location    = "Australia Southeast"
+owner       = "Platform Team"
+cost_center = "IT-Infrastructure"
+
+# Network Configuration
+hub_address_space    = "10.0.0.0/16"
+dev_address_space    = "10.10.0.0/16"
+prod_address_space   = "10.20.0.0/16"
+shared_address_space = "10.30.0.0/16"
+
+# Security Configuration
+firewall_sku_tier = "Standard"  # or "Premium" for advanced features
+
+# VPN Configuration (keep your working settings)
+vpn_gateway_sku      = "VpnGw1"
+aws_gateway_address  = "13.239.236.178"
+aws_address_spaces   = ["172.31.0.0/16"]
+onprem_address_spaces = ["172.31.0.0/16"]
+
+# DNS Configuration
+private_dns_zone_name = "internal.corp"
+
+# Secrets (set via environment variables or secure input)
+# vpn_shared_key = "your-secure-shared-key-here"
