@@ -1,0 +1,13 @@
+# Terraform
+.terraform/
+*.tfplan
+*.tfstate
+*.tfstate.*
+crash.log
+.terraform.lock.hcl
+*.tfvars 
+
+.DS_Store # macOS
+Thumbs.db # Windows
+
+expansion.md

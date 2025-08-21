@@ -1,228 +1,266 @@
-# Azure Hub-Spoke Network with Site-to-Site VPN to AWS (strongSwan) - with screenshots below
+# Azure Enterprise Landing Zone - Hub-Spoke Network Architecture
 
-This project deploys a robust network architecture in Microsoft Azure using the Hub-Spoke topology, and establishes a secure Site-to-Site (S2S) VPN connection to an Amazon Web Services (AWS) Virtual Private Cloud (VPC) running a strongSwan IPSec VPN server. All infrastructure is defined and managed using Terraform, except the Azure VM and the AWS EC2 instance which were manually provisioned.
+This is a comprehensive, enterprise-grade Azure Landing Zone implementation focusing on networking and foundation architecture. It transforms the original Hub-Spoke VNet project into a modular, scalable, and secure enterprise solution.
 
-**Personal Context:** Initially, the goal was to simulate an "on-premises" VPN connection from my home network. However, due to Carrier-Grade NAT (CGNAT) issues with my home IP address, a direct connection wasn't feasible. This led to a pivot: instead of a direct home VPN, I leveraged an AWS EC2 instance to act as my "on-premises" VPN endpoint. This challenge unexpectedly transformed the project into an even more exciting **hybrid cloud** scenario, demonstrating seamless and secure connectivity between Azure and AWS.
+## Architecture Overview
 
-![azure hub spoke diagram](./screenshots/azure-hub-spoke-vpn.png)
+### Core Components
 
-## What This Project Builds
+- **Hub-Spoke Network Topology**: Centralized hub with multiple spoke networks for workload isolation
+- **Azure Firewall**: Centralized security and egress filtering
+- **VPN Gateway**: Hybrid connectivity with Point-to-Site and Site-to-Site VPN
+- **Network Security Groups**: Granular network security controls
+- **Private DNS**: Internal name resolution across the landing zone
+- **Key Vault**: Centralized secrets management
+- **Modular Terraform**: Reusable infrastructure components
 
-This Terraform configuration sets up the following core components:
+### Network Design
 
-### Azure Side (Hub-Spoke Network)
+```
+Hub VNet (10.0.0.0/16)
+├── Gateway Subnet (10.0.0.0/24)      - VPN Gateway
+├── Firewall Subnet (10.0.1.0/24)     - Azure Firewall
+├── Bastion Subnet (10.0.2.0/24)      - Azure Bastion
+├── Shared Services (10.0.3.0/24)     - Key Vault, DNS
+└── Management (10.0.4.0/24)          - Management tools
 
-- **Resource Group:** A dedicated container for all Azure resources.
-- **Hub Virtual Network (VNet):** The central network acting as the "hub."
-  - **Gateway Subnet:** A dedicated subnet within the Hub VNet for the VPN Gateway.
-  - **Azure Firewall Subnet:** A dedicated subnet for the Azure Firewall.
-  - **Azure Bastion Subnet:** A dedicated subnet for Azure Bastion.
-- **Spoke Virtual Networks (VNets):** Two separate "spoke" VNets (e.g., "Development" and "Production") peered with the Hub VNet.
-  - Each Spoke VNet has a default subnet and is associated with a route table.
-- **Virtual Network Peering:** Connections between the Hub and Spoke VNets, allowing traffic to flow between them.
-- **Azure Firewall:** A managed, cloud-based network security service providing network rule collection (e.g., for egress filtering).
-- **Azure Virtual Network Gateway (VPN Gateway):** A highly available, managed VPN service in the Hub VNet.
-- **Local Network Gateway:** Represents the on-premises (or in this case, AWS VPC) network, including its public IP and CIDR ranges.
-- **VPN Gateway Connection (IPsec S2S):** The secure tunnel establishing connectivity between the Azure VPN Gateway and the strongSwan VPN server on AWS.
-- **Azure Bastion:** A managed service for secure SSH/RDP access to VMs within your Azure VNets without exposing them directly to the public internet.
-- **Public IP Addresses:** Allocated for the Azure Firewall, VPN Gateway, and Azure Bastion for external connectivity.
-- **Route Tables:** Configured to direct traffic from spoke networks through the Azure Firewall to the internet (default route) and to the AWS network (VPN route).
-- **Private DNS Zone:** Configured for private DNS resolution within Azure, especially useful for integrated services.
+Spoke VNets
+├── Dev (10.10.0.0/16)
+│   ├── Default (10.10.0.0/24)
+│   ├── Application (10.10.1.0/24)
+│   └── Data (10.10.2.0/24)
+├── Prod (10.20.0.0/16)
+│   ├── Default (10.20.0.0/24)
+│   ├── Application (10.20.1.0/24)
+│   └── Data (10.20.2.0/24)
+└── Shared (10.30.0.0/16)
+    └── Default (10.30.0.0/24)
+```
 
-### AWS Side (On-premises VPN Endpoint)
+## Module Structure
 
-- **EC2 Instance:** A Linux virtual machine (e.g., Ubuntu) running the strongSwan IPSec VPN software. This instance acts as the "on-premises" VPN endpoint.
-- **Security Group:** Configured on the EC2 instance to allow necessary VPN traffic (UDP 500, UDP 4500) and SSH access.
-- **Elastic IP:** An optional static public IP assigned to the EC2 instance (though a dynamic public IP also works for a lab setup).
+```
+modules/
+├── networking/
+│   ├── hub/           - Hub VNet with core subnets
+│   └── spoke/         - Spoke VNet with workload subnets
+├── security/
+│   ├── firewall/      - Azure Firewall with rules
+│   └── nsg/           - Network Security Groups
+└── foundation/
+    ├── keyvault/      - Key Vault for secrets
+    ├── dns/           - Private DNS zones
+    └── vpn/           - VPN Gateway and connections
+```
 
-## Why This Setup is Useful (The "Why")
+## Enterprise Features
 
-This architecture addresses several key networking and security requirements in a cloud environment:
+### Security
+- **Defense in Depth**: Multiple security layers (Firewall, NSGs, Private Endpoints)
+- **Zero Trust Network**: Deny-by-default with explicit allow rules
+- **Secrets Management**: Centralized Key Vault with network isolation
+- **Audit Logging**: Comprehensive logging for compliance
 
-1.  **Hub-Spoke Network Topology:**
+### Networking
+- **Forced Tunneling**: All internet traffic through Azure Firewall
+- **Private Endpoints**: Secure access to Azure services
+- **Hybrid Connectivity**: VPN Gateway for on-premises integration
+- **DNS Resolution**: Private DNS for internal services
 
-    - **Centralized Services:** Allows you to centralize shared services (like firewalls, VPN gateways, monitoring) in the Hub VNet.
-    - **Simplified Management:** Reduces complexity for routing and security policies compared to a flat network.
-    - **Scalability:** Easily add new "spoke" VNets for different departments, environments (Dev/Prod), or applications without redesigning the core network.
-    - **Isolation:** Provides network isolation between different spoke environments while maintaining connectivity to shared services.
+### Governance
+- **Resource Tagging**: Consistent tagging strategy
+- **RBAC Ready**: Modular design supports granular permissions
+- **Cost Management**: Resource grouping by workload and environment
+- **Compliance**: Network security standards implementation
 
-2.  **Hybrid Cloud Connectivity (Azure to AWS S2S VPN):**
+## Deployment Guide
 
-    - **Secure Interoperability:** Establishes a secure, encrypted tunnel (IPSec VPN) between your Azure environment and a different cloud provider (AWS), enabling hybrid cloud scenarios.
-    - **Data Encryption:** All traffic traversing the VPN tunnel is encrypted, protecting sensitive data as it moves between clouds.
-    - **Disaster Recovery / Multi-Cloud Strategy:** Forms a foundational building block for multi-cloud deployments, disaster recovery, or seamlessly extending your enterprise network across cloud providers.
-    - **Resource Access:** Allows virtual machines and services in Azure to securely communicate with resources in your AWS VPC, and vice versa, as if they were on the same network.
+### Prerequisites
 
-3.  **Enhanced Security with Azure Firewall:**
+1. **Azure CLI** logged in with appropriate permissions
+2. **Terraform** >= 1.0 installed
+3. **Contributor** role on target subscription
+4. **Key Vault Administrator** role for secrets management
 
-    - **Centralized Egress Control:** The Azure Firewall acts as a central point for inspecting and filtering all outbound (egress) traffic from your spoke networks to the internet, enforcing corporate security policies.
-    - **Threat Protection:** Provides built-in threat intelligence and filtering capabilities.
+### Quick Start
 
-4.  **Secure Remote Access with Azure Bastion:**
+1. **Clone and Initialize**
+   ```bash
+   git clone <repository>
+   cd az-hubspoke
+   terraform init
+   ```
 
-    - Eliminates the need to expose VMs to the public internet via public IPs for RDP/SSH, significantly reducing the attack surface.
-    - Provides secure, browser-based access.
+2. **Configure Variables**
+   ```bash
+   cp terraform-enterprise.tfvars.example terraform-enterprise.tfvars
+   # Edit terraform-enterprise.tfvars with your values
+   ```
 
-5.  **Infrastructure as Code (IaC) with Terraform:**
-    - **Automation:** Automates the entire deployment process, making it repeatable and less prone to manual errors.
-    - **Consistency:** Ensures consistent deployments across environments.
-    - **Version Control:** Allows you to version control your infrastructure definitions, track changes, and collaborate effectively.
-    - **Auditability:** Provides a clear, auditable record of your infrastructure's desired state.
+3. **Set VPN Shared Key**
+   ```bash
+   export TF_VAR_vpn_shared_key="your-secure-shared-key"
+   ```
 
-## Getting Started / Deployment Steps
+4. **Deploy Infrastructure**
+   ```bash
+   terraform plan -var-file="terraform-enterprise.tfvars"
+   terraform apply -var-file="terraform-enterprise.tfvars"
+   ```
 
-1.  **Prerequisites:**
+### Configuration Options
 
-    - [Terraform](https://developer.hashicorp.com/terraform/downloads) (CLI installed)
-    - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) (logged in and configured with an Azure subscription)
-    - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) (configured with AWS credentials)
-    - An AWS EC2 instance running Ubuntu (e.g., `t3.micro`) configured with a Public IP and a Security Group allowing UDP ports 500, 4500, and TCP port 22 (for SSH).
-    - A strong, complex shared key (PSK) for the VPN connection.
+#### Network Sizing
+- **Small**: Hub /20, Spokes /24 (for labs/dev)
+- **Medium**: Hub /16, Spokes /20 (for production)
+- **Large**: Hub /12, Spokes /16 (for enterprise)
 
-2.  **Clone the Repository:**
+#### Security Tiers
+- **Standard**: Basic firewall and NSG rules
+- **Premium**: Advanced threat protection and analytics
+- **Enterprise**: Full compliance and monitoring suite
 
-    ```bash
-    git clone [https://github.com/Simodalstix/az-hub-spoke-vpn.git](https://github.com/Simodalstix/az-hub-spoke-vpn.git)
-    cd az-hub-spoke-vpn
-    ```
+#### Connectivity Options
+- **VPN Only**: Site-to-Site and Point-to-Site VPN
+- **ExpressRoute**: Dedicated private connectivity
+- **Hybrid**: Both VPN and ExpressRoute for redundancy
 
-3.  **Initialize Terraform:**
+## Security Baseline
 
-    ```bash
-    terraform init
-    ```
+### Network Security Groups
+- **Default Deny**: All inbound traffic denied by default
+- **Bastion Access**: SSH/RDP only through Azure Bastion
+- **Service-Specific**: Tailored rules per workload type
 
-4.  **Configure Variables:**
+### Azure Firewall Rules
+- **Application Rules**: FQDN-based filtering for outbound traffic
+- **Network Rules**: IP-based filtering for internal traffic
+- **Threat Intelligence**: Automatic blocking of malicious IPs
 
-    - Create a file named `terraform.tfvars` in the root of the project.
-    - Add your chosen VPN shared key and other variable values as needed.
-    - **Example `terraform.tfvars`:**
-      ```terraform
-      prefix          = "prodnet" # Or "devnet", "lab", etc.
-      location        = "australiasoutheast" # Or "eastus", "westeurope" etc.
-      # ... other variables from variables.tf if desired ...
-      vpn_shared_key  = "YOUR_REALLY_STRONG_AND_COMPLEX_SHARED_KEY_HERE"
-      ```
-    - **Ensure `terraform.tfvars` is ignored by Git** (it should be covered by `.gitignore`).
+### Key Vault Security
+- **Network Isolation**: Private endpoints only
+- **Access Policies**: Least privilege access
+- **Audit Logging**: All access logged and monitored
 
-5.  **Review and Apply Terraform Plan (Azure Side):**
+## Monitoring and Compliance
 
-    - Review the changes Terraform will make:
-      ```bash
-      terraform plan
-      ```
-    - Apply the changes to deploy the Azure infrastructure:
-      ```bash
-      terraform apply
-      ```
-    - **Note:** The VPN Gateway connection provisioning can take 20-45 minutes.
+### Network Monitoring
+- **Network Watcher**: Traffic analytics and diagnostics
+- **Flow Logs**: NSG traffic logging
+- **Connection Monitor**: Connectivity testing
 
-## strongSwan VPN Configuration on AWS EC2
+### Security Monitoring
+- **Azure Security Center**: Security posture assessment
+- **Sentinel Integration**: SIEM for security events
+- **Compliance Dashboard**: Regulatory compliance tracking
 
-Originally, I planned to simulate an on-premises VPN from my apartment. But my ISP uses Carrier-Grade NAT (CGNAT), which meant I couldn’t expose a public IP to receive incoming VPN connections.
+## Customization
 
-Instead of shelving the idea, I pivoted — and spun up an AWS EC2 instance to act as the on-prem endpoint. This turned the project into a practical **multi-cloud lab**, connecting Azure and AWS over a real site-to-site IPsec tunnel.
+### Adding New Spokes
+```hcl
+# In terraform-enterprise.tfvars
+spoke_configs = {
+  dev    = { address_space = "10.10.0.0/16" }
+  prod   = { address_space = "10.20.0.0/16" }
+  shared = { address_space = "10.30.0.0/16" }
+  test   = { address_space = "10.40.0.0/16" }  # New spoke
+}
+```
 
-The EC2 instance runs strongSwan, which manages the IPsec connection back to Azure.
+### Custom NSG Rules
+```hcl
+nsg_rules = {
+  prod = {
+    AllowDatabase = {
+      priority                   = 200
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "1433"
+      source_address_prefix      = "10.20.1.0/24"
+      destination_address_prefix = "10.20.2.0/24"
+    }
+  }
+}
+```
 
-### 1. Install strongSwan
+## Migration from Original
 
+To migrate from the original hub-spoke implementation:
+
+1. **Backup Current State**
+   ```bash
+   terraform state pull > backup.tfstate
+   ```
+
+2. **Update Configuration**
+   ```bash
+   # Use main-enterprise.tf instead of main.tf
+   mv main.tf main-original.tf
+   mv main-enterprise.tf main.tf
+   mv variables-enterprise.tf variables.tf
+   mv outputs-enterprise.tf outputs.tf
+   ```
+
+3. **Import Existing Resources** (if needed)
+   ```bash
+   terraform import azurerm_resource_group.main /subscriptions/.../resourceGroups/...
+   ```
+
+## Cost Optimization
+
+### Resource Sizing
+- **VPN Gateway**: Start with VpnGw1, scale as needed
+- **Azure Firewall**: Use Standard tier for most workloads
+- **Key Vault**: Standard tier sufficient for most scenarios
+
+### Automation
+- **Auto-shutdown**: Configure VM auto-shutdown policies
+- **Reserved Instances**: Use for long-running resources
+- **Spot Instances**: For development workloads
+
+## Troubleshooting
+
+### Common Issues
+
+1. **VPN Connection Fails**
+   - Check shared key matches on both ends
+   - Verify NSG rules allow VPN traffic
+   - Confirm routing tables are correct
+
+2. **DNS Resolution Issues**
+   - Verify private DNS zone links
+   - Check conditional forwarders
+   - Validate DNS server settings
+
+3. **Firewall Blocking Traffic**
+   - Review application and network rules
+   - Check threat intelligence feeds
+   - Verify source/destination addresses
+
+### Diagnostic Commands
 ```bash
-sudo apt update
-sudo apt install strongswan strongswan-pki -y
+# Check VPN status
+az network vpn-connection show --name connection-name --resource-group rg-name
+
+# Test DNS resolution
+nslookup internal.corp
+
+# Check firewall logs
+az monitor activity-log list --resource-group rg-name
 ```
 
-### 2. Configure `/etc/ipsec.conf`
+## Support and Maintenance
 
-```conf
-config setup
-  charondebug="ike 2, knl 2, cfg 2, net 2, esp 2, dmn 2, mgr 2, enc 2"
-  strictcrlpolicy=no
-  uniqueids=no
+### Regular Tasks
+- **Security Updates**: Monthly review of firewall rules
+- **Capacity Planning**: Quarterly network utilization review
+- **Compliance Audits**: Annual security and compliance assessment
 
-conn azure
-  type=tunnel
-  authby=psk
-  left=%defaultroute                # EC2's public IP
-  leftid=13.239.236.178
-  leftsubnet=172.31.0.0/16
-  right=4.198.91.154                # Azure VPN Gateway public IP
-  rightsubnet=10.20.0.0/16
-  ike=aes256-sha256-modp1024!
-  esp=aes256-sha256!
-  auto=start
-  keyexchange=ikev2
-  dpddelay=10s
-  dpdtimeout=30s
-  dpdaction=restart
-  aggressive=no
-  fragmentation=yes
-  forceencaps=yes
-  mark=%unique
-```
+### Monitoring Alerts
+- **VPN Connectivity**: Alert on connection failures
+- **Firewall Health**: Monitor firewall availability
+- **Key Vault Access**: Alert on unauthorized access attempts
 
-### 3. Add the shared key to `/etc/ipsec.secrets`
-
-```conf
-13.239.236.178 4.198.91.154 : PSK "YOUR_SHARED_KEY"
-```
-
-> Make sure the PSK matches the value used in Azure’s VPN connection.
-
-### 4. Enable and start the service
-
-```bash
-sudo ipsec restart
-sudo ipsec statusall
-```
-
----
-
-### Troubleshooting
-
-If traffic isn't flowing but the tunnel is up:
-
-- Check `/var/log/syslog` or `sudo journalctl -u strongswan`
-- Use `tcpdump -n -i any icmp`
-- Check NSG/SG rules
-- Ensure VNet peering has `use_remote_gateways = true`
-
-## Cleanup
-
-To destroy all provisioned Azure resources and avoid incurring costs:
-
-```bash
-terraform destroy
-```
-
-## Lab Validation Screenshots
-
-**AWS Security Group Inbound Rules**
-
-The EC2 instance is configured to allow UDP ports 500 and 4500 (for IPsec) and TCP port 22 (SSH) from Azure. Outbound traffic is unrestricted.
-
-![aws-sg-rules](./screenshots/aws-sg-rules.png)
-
----
-
-**Azure NSG Inbound Rules for the Spoke Subnet**
-
-This NSG allows ICMP (ping) traffic from the AWS subnet and SSH traffic from Azure Bastion.
-
-![azure-nsg-rules](./screenshots/azure-nsg-rules.png)
-
----
-
-**VPN Tunnel Established and Ping to Azure VM**
-
-This screenshot shows the IPsec tunnel established (`ipsec statusall`) and successful ping responses from the Azure production spoke VM (`10.20.0.4`).
-
-![vpn-tunnel-and-ping](./screenshots/VPN-tunnel-and-ping.png)
-
----
-
-**Ping from Azure to AWS EC2 via Bastion**
-
-This shows the reverse ping test — from the Azure VM (accessed via Azure Bastion) back to the AWS EC2 instance (`172.31.9.161`).
-
-![ping-from-bastion](./screenshots/ping-from-bastion.png)
+This enterprise landing zone provides a solid foundation for Azure workloads with enterprise-grade security, networking, and governance capabilities.

@@ -1,13 +1,43 @@
 # Terraform
-.terraform/
-*.tfplan
 *.tfstate
 *.tfstate.*
-crash.log
+*.tfvars
+!*.tfvars.example
+.terraform/
 .terraform.lock.hcl
-*.tfvars 
+tfplan
+crash.log
+crash.*.log
 
-.DS_Store # macOS
-Thumbs.db # Windows
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-expansion.md
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.backup
+*.bak
+
+# Enterprise specific
+terraform-enterprise.tfvars
+.env
+.env.local
