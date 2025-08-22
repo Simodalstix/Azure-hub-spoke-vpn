@@ -4,6 +4,9 @@ This is a comprehensive, enterprise-grade Azure Landing Zone implementation focu
 
 ## Architecture Overview
 
+![Azure Landing Zone Hub-Spoke Architecture](/screenshots/azure-landing-zone-hub-diagram.svg)
+_Architecture diagram created using AWS official icons and Excalidraw_
+
 ### Core Components
 
 - **Hub-Spoke Network Topology**: Centralized hub with multiple spoke networks for workload isolation
