@@ -1,6 +1,6 @@
 # Azure Enterprise Landing Zone - Hub-Spoke Network Architecture
 
-This is a comprehensive, enterprise-grade Azure Landing Zone implementation focusing on networking and foundation architecture. It transforms the original Hub-Spoke VNet project into a modular, scalable, and secure enterprise solution.
+This is a comprehensive, enterprise-grade Azure Landing Zone implementation focusing on networking and foundation architecture. It transforms the original Hub-Spoke VNet project into a modular, scalable, and secure enterprise solution with room for expansion into identity management, governance, and advanced monitoring capabilities.
 
 ## Architecture Overview
 
@@ -56,18 +56,21 @@ modules/
 ## Enterprise Features
 
 ### Security
+
 - **Defense in Depth**: Multiple security layers (Firewall, NSGs, Private Endpoints)
 - **Zero Trust Network**: Deny-by-default with explicit allow rules
 - **Secrets Management**: Centralized Key Vault with network isolation
 - **Audit Logging**: Comprehensive logging for compliance
 
 ### Networking
+
 - **Forced Tunneling**: All internet traffic through Azure Firewall
 - **Private Endpoints**: Secure access to Azure services
 - **Hybrid Connectivity**: VPN Gateway for on-premises integration
 - **DNS Resolution**: Private DNS for internal services
 
 ### Governance
+
 - **Resource Tagging**: Consistent tagging strategy
 - **RBAC Ready**: Modular design supports granular permissions
 - **Cost Management**: Resource grouping by workload and environment
@@ -85,6 +88,7 @@ modules/
 ### Quick Start
 
 1. **Clone and Initialize**
+
    ```bash
    git clone <repository>
    cd az-hubspoke
@@ -92,12 +96,14 @@ modules/
    ```
 
 2. **Configure Variables**
+
    ```bash
    cp terraform-enterprise.tfvars.example terraform-enterprise.tfvars
    # Edit terraform-enterprise.tfvars with your values
    ```
 
 3. **Set VPN Shared Key**
+
    ```bash
    export TF_VAR_vpn_shared_key="your-secure-shared-key"
    ```
@@ -111,16 +117,19 @@ modules/
 ### Configuration Options
 
 #### Network Sizing
+
 - **Small**: Hub /20, Spokes /24 (for labs/dev)
 - **Medium**: Hub /16, Spokes /20 (for production)
 - **Large**: Hub /12, Spokes /16 (for enterprise)
 
 #### Security Tiers
+
 - **Standard**: Basic firewall and NSG rules
 - **Premium**: Advanced threat protection and analytics
 - **Enterprise**: Full compliance and monitoring suite
 
 #### Connectivity Options
+
 - **VPN Only**: Site-to-Site and Point-to-Site VPN
 - **ExpressRoute**: Dedicated private connectivity
 - **Hybrid**: Both VPN and ExpressRoute for redundancy
@@ -128,16 +137,19 @@ modules/
 ## Security Baseline
 
 ### Network Security Groups
+
 - **Default Deny**: All inbound traffic denied by default
 - **Bastion Access**: SSH/RDP only through Azure Bastion
 - **Service-Specific**: Tailored rules per workload type
 
 ### Azure Firewall Rules
+
 - **Application Rules**: FQDN-based filtering for outbound traffic
 - **Network Rules**: IP-based filtering for internal traffic
 - **Threat Intelligence**: Automatic blocking of malicious IPs
 
 ### Key Vault Security
+
 - **Network Isolation**: Private endpoints only
 - **Access Policies**: Least privilege access
 - **Audit Logging**: All access logged and monitored
@@ -145,11 +157,13 @@ modules/
 ## Monitoring and Compliance
 
 ### Network Monitoring
+
 - **Network Watcher**: Traffic analytics and diagnostics
 - **Flow Logs**: NSG traffic logging
 - **Connection Monitor**: Connectivity testing
 
 ### Security Monitoring
+
 - **Azure Security Center**: Security posture assessment
 - **Sentinel Integration**: SIEM for security events
 - **Compliance Dashboard**: Regulatory compliance tracking
@@ -157,6 +171,7 @@ modules/
 ## Customization
 
 ### Adding New Spokes
+
 ```hcl
 # In terraform-enterprise.tfvars
 spoke_configs = {
@@ -168,6 +183,7 @@ spoke_configs = {
 ```
 
 ### Custom NSG Rules
+
 ```hcl
 nsg_rules = {
   prod = {
@@ -190,11 +206,13 @@ nsg_rules = {
 To migrate from the original hub-spoke implementation:
 
 1. **Backup Current State**
+
    ```bash
    terraform state pull > backup.tfstate
    ```
 
 2. **Update Configuration**
+
    ```bash
    # Use main-enterprise.tf instead of main.tf
    mv main.tf main-original.tf
@@ -211,11 +229,13 @@ To migrate from the original hub-spoke implementation:
 ## Cost Optimization
 
 ### Resource Sizing
+
 - **VPN Gateway**: Start with VpnGw1, scale as needed
 - **Azure Firewall**: Use Standard tier for most workloads
 - **Key Vault**: Standard tier sufficient for most scenarios
 
 ### Automation
+
 - **Auto-shutdown**: Configure VM auto-shutdown policies
 - **Reserved Instances**: Use for long-running resources
 - **Spot Instances**: For development workloads
@@ -225,11 +245,13 @@ To migrate from the original hub-spoke implementation:
 ### Common Issues
 
 1. **VPN Connection Fails**
+
    - Check shared key matches on both ends
    - Verify NSG rules allow VPN traffic
    - Confirm routing tables are correct
 
 2. **DNS Resolution Issues**
+
    - Verify private DNS zone links
    - Check conditional forwarders
    - Validate DNS server settings
@@ -240,6 +262,7 @@ To migrate from the original hub-spoke implementation:
    - Verify source/destination addresses
 
 ### Diagnostic Commands
+
 ```bash
 # Check VPN status
 az network vpn-connection show --name connection-name --resource-group rg-name
@@ -254,13 +277,43 @@ az monitor activity-log list --resource-group rg-name
 ## Support and Maintenance
 
 ### Regular Tasks
+
 - **Security Updates**: Monthly review of firewall rules
 - **Capacity Planning**: Quarterly network utilization review
 - **Compliance Audits**: Annual security and compliance assessment
 
 ### Monitoring Alerts
+
 - **VPN Connectivity**: Alert on connection failures
 - **Firewall Health**: Monitor firewall availability
 - **Key Vault Access**: Alert on unauthorized access attempts
 
 This enterprise landing zone provides a solid foundation for Azure workloads with enterprise-grade security, networking, and governance capabilities.
+
+## Roadmap
+
+### Phase 2: Identity & Access Management
+
+- [ ] Azure Active Directory Domain Services
+- [ ] Domain controller deployment in management subnet
+- [ ] Integration with existing Private DNS zones
+- [ ] RBAC policies per spoke environment
+- [ ] Hybrid identity with on-premises AD
+- [ ] Conditional access policies
+
+### Phase 3: Governance & Compliance
+
+- [ ] Azure Policy implementation
+- [ ] Cost management and budgets
+- [ ] Compliance dashboards
+- [ ] Automated backup policies
+- [ ] Security Center integration
+- [ ] Sentinel SIEM deployment
+
+### Phase 4: Monitoring & Operations
+
+- [ ] Network Watcher deployment
+- [ ] Application Insights integration
+- [ ] Automated alerting and remediation
+- [ ] Performance monitoring dashboards
+- [ ] Capacity planning automation
