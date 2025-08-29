@@ -51,19 +51,19 @@ resource "azurerm_firewall_network_rule_collection" "main" {
   action              = "Allow"
 
   rule {
-    name = "AllowInternetAccess"
-    source_addresses = var.spoke_address_spaces
-    destination_ports = ["80", "443", "53"]
+    name                  = "AllowInternetAccess"
+    source_addresses      = var.spoke_address_spaces
+    destination_ports     = ["80", "443", "53"]
     destination_addresses = ["*"]
-    protocols = ["TCP", "UDP"]
+    protocols             = ["TCP", "UDP"]
   }
 
   rule {
-    name = "AllowVPNTraffic"
-    source_addresses = var.spoke_address_spaces
+    name                  = "AllowVPNTraffic"
+    source_addresses      = var.spoke_address_spaces
     destination_addresses = var.onprem_address_spaces
-    destination_ports = ["*"]
-    protocols = ["Any"]
+    destination_ports     = ["*"]
+    protocols             = ["Any"]
   }
 }
 
@@ -76,7 +76,7 @@ resource "azurerm_firewall_application_rule_collection" "main" {
   action              = "Allow"
 
   rule {
-    name = "AllowAzureServices"
+    name             = "AllowAzureServices"
     source_addresses = var.spoke_address_spaces
     target_fqdns = [
       "*.azure.com",

@@ -6,6 +6,7 @@
 .terraform/
 .terraform.lock.hcl
 tfplan
+plan.out
 crash.log
 crash.*.log
 
@@ -41,3 +42,7 @@ secrets/
 terraform-enterprise.tfvars
 .env
 .env.local
+
+# Testing
+test-results/
+*.test

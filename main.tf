@@ -11,21 +11,21 @@ provider "azurerm" {
 # Common tags for all resources
 locals {
   common_tags = {
-    Environment   = var.environment
-    Project       = "AzureLandingZone"
-    Owner         = var.owner
-    CostCenter    = var.cost_center
-    CreatedBy     = "Terraform"
-    CreatedDate   = timestamp()
+    Environment = var.environment
+    Project     = "AzureLandingZone"
+    Owner       = var.owner
+    CostCenter  = var.cost_center
+    CreatedBy   = "Terraform"
+    CreatedDate = timestamp()
   }
 
   # Network configuration
   hub_subnets = {
-    gateway_subnet         = cidrsubnet(var.hub_address_space, 8, 0)   # /24
-    firewall_subnet        = cidrsubnet(var.hub_address_space, 8, 1)   # /24
-    bastion_subnet         = cidrsubnet(var.hub_address_space, 8, 2)   # /24
-    shared_services_subnet = cidrsubnet(var.hub_address_space, 8, 3)   # /24
-    management_subnet      = cidrsubnet(var.hub_address_space, 8, 4)   # /24
+    gateway_subnet         = cidrsubnet(var.hub_address_space, 8, 0) # /24
+    firewall_subnet        = cidrsubnet(var.hub_address_space, 8, 1) # /24
+    bastion_subnet         = cidrsubnet(var.hub_address_space, 8, 2) # /24
+    shared_services_subnet = cidrsubnet(var.hub_address_space, 8, 3) # /24
+    management_subnet      = cidrsubnet(var.hub_address_space, 8, 4) # /24
   }
 
   spoke_configs = {
@@ -67,37 +67,37 @@ resource "azurerm_resource_group" "main" {
 module "hub_network" {
   source = "./modules/networking/hub"
 
-  prefix                        = var.prefix
-  location                      = var.location
-  resource_group_name           = azurerm_resource_group.main.name
-  hub_address_space             = var.hub_address_space
-  gateway_subnet_cidr           = local.hub_subnets.gateway_subnet
-  firewall_subnet_cidr          = local.hub_subnets.firewall_subnet
-  bastion_subnet_cidr           = local.hub_subnets.bastion_subnet
-  shared_services_subnet_cidr   = local.hub_subnets.shared_services_subnet
-  management_subnet_cidr        = local.hub_subnets.management_subnet
-  tags                          = local.common_tags
+  prefix                      = var.prefix
+  location                    = var.location
+  resource_group_name         = azurerm_resource_group.main.name
+  hub_address_space           = var.hub_address_space
+  gateway_subnet_cidr         = local.hub_subnets.gateway_subnet
+  firewall_subnet_cidr        = local.hub_subnets.firewall_subnet
+  bastion_subnet_cidr         = local.hub_subnets.bastion_subnet
+  shared_services_subnet_cidr = local.hub_subnets.shared_services_subnet
+  management_subnet_cidr      = local.hub_subnets.management_subnet
+  tags                        = local.common_tags
 }
 
 # Spoke Networks
 module "spoke_networks" {
-  source = "./modules/networking/spoke"
+  source   = "./modules/networking/spoke"
   for_each = local.spoke_configs
 
-  prefix                = var.prefix
-  spoke_name            = each.key
-  location              = var.location
-  resource_group_name   = azurerm_resource_group.main.name
-  spoke_address_space   = each.value.address_space
-  default_subnet_cidr   = each.value.default_subnet
-  create_app_subnet     = each.value.create_app_subnet
-  app_subnet_cidr       = each.value.app_subnet
-  create_data_subnet    = each.value.create_data_subnet
-  data_subnet_cidr      = each.value.data_subnet
-  hub_vnet_id           = module.hub_network.vnet_id
-  hub_vnet_name         = module.hub_network.vnet_name
-  use_remote_gateways   = each.key != "shared" # Shared services don't need VPN
-  tags                  = merge(local.common_tags, { Workload = each.key })
+  prefix              = var.prefix
+  spoke_name          = each.key
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+  spoke_address_space = each.value.address_space
+  default_subnet_cidr = each.value.default_subnet
+  create_app_subnet   = each.value.create_app_subnet
+  app_subnet_cidr     = each.value.app_subnet
+  create_data_subnet  = each.value.create_data_subnet
+  data_subnet_cidr    = each.value.data_subnet
+  hub_vnet_id         = module.hub_network.vnet_id
+  hub_vnet_name       = module.hub_network.vnet_name
+  use_remote_gateways = each.key != "shared" # Shared services don't need VPN
+  tags                = merge(local.common_tags, { Workload = each.key })
 }
 
 # Azure Firewall
@@ -116,33 +116,33 @@ module "firewall" {
 
 # Network Security Groups
 module "spoke_nsgs" {
-  source = "./modules/security/nsg"
+  source   = "./modules/security/nsg"
   for_each = local.spoke_configs
 
   prefix              = var.prefix
   nsg_name            = each.key
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  subnet_ids          = compact([
+  subnet_ids = compact([
     module.spoke_networks[each.key].default_subnet_id,
     module.spoke_networks[each.key].app_subnet_id,
     module.spoke_networks[each.key].data_subnet_id
   ])
-  security_rules      = var.nsg_rules[each.key]
-  tags                = merge(local.common_tags, { Workload = each.key })
+  security_rules = var.nsg_rules[each.key]
+  tags           = merge(local.common_tags, { Workload = each.key })
 }
 
 # Key Vault
 module "key_vault" {
   source = "./modules/foundation/keyvault"
 
-  prefix                        = var.prefix
-  location                      = var.location
-  resource_group_name           = azurerm_resource_group.main.name
-  network_acls_default_action   = "Allow" # Change to "Deny" for production
-  allowed_subnet_ids            = [module.hub_network.management_subnet_id]
-  vpn_shared_key                = var.vpn_shared_key
-  tags                          = local.common_tags
+  prefix                      = var.prefix
+  location                    = var.location
+  resource_group_name         = azurerm_resource_group.main.name
+  network_acls_default_action = "Allow" # Change to "Deny" for production
+  allowed_subnet_ids          = [module.hub_network.management_subnet_id]
+  vpn_shared_key              = var.vpn_shared_key
+  tags                        = local.common_tags
 }
 
 # Private DNS

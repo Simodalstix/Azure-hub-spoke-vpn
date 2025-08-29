@@ -81,7 +81,7 @@ output "network_summary" {
       prod   = var.prod_address_space
       shared = var.shared_address_space
     }
-    firewall_ip = module.firewall.firewall_private_ip
+    firewall_ip    = module.firewall.firewall_private_ip
     vpn_gateway_ip = module.vpn_gateway.vpn_gateway_public_ip
   }
 }

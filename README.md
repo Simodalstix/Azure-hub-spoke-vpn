@@ -1,5 +1,7 @@
 # Azure Hub-Spoke Landing Zone
 
+[![Terraform CI](https://github.com/USERNAME/Azure-hubspoke-landingzone/workflows/Terraform%20CI/badge.svg)](https://github.com/USERNAME/Azure-hubspoke-landingzone/actions)
+[![Release](https://img.shields.io/github/v/release/USERNAME/Azure-hubspoke-landingzone)](https://github.com/USERNAME/Azure-hubspoke-landingzone/releases)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-623CE4?logo=terraform)](https://www.terraform.io/)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -19,6 +21,7 @@ Enterprise-grade Azure Landing Zone implementing hub-spoke network architecture 
 ## Architecture
 
 ![Azure Hub-Spoke Architecture](screenshots/azure-landing-zone-hub-diagram.svg)
+Architecture diagram created using Azure official icons and Excalidraw
 
 ```
 Hub VNet (10.0.0.0/16)
@@ -65,17 +68,20 @@ terraform apply -var-file="terraform-enterprise.tfvars"
 ## Key Features
 
 ### Security
+
 - **Defense in Depth**: Multiple security layers (Firewall, NSGs, Private Endpoints)
 - **Zero Trust**: Deny-by-default with explicit allow rules
 - **Forced Tunneling**: All internet traffic through Azure Firewall
 - **Network Isolation**: Private endpoints for Azure services
 
 ### Connectivity
+
 - **Hybrid VPN**: Site-to-Site connectivity to on-premises/AWS
 - **Hub-Spoke Peering**: Centralized connectivity model
 - **Private DNS**: Internal name resolution
 
 ### Governance
+
 - **Consistent Tagging**: Environment, cost center, owner tracking
 - **Modular Design**: Reusable Terraform modules
 - **RBAC Ready**: Supports granular permissions
@@ -83,6 +89,7 @@ terraform apply -var-file="terraform-enterprise.tfvars"
 ## Deployment Considerations
 
 ### Remote State
+
 For production deployments, configure remote state:
 
 ```hcl
@@ -97,22 +104,30 @@ terraform {
 ```
 
 ### Credentials
+
 - Use Azure CLI authentication for development
 - Use Managed Identity or Service Principal for CI/CD
 - Store VPN shared key in Azure Key Vault or environment variables
 
 ### Costs
+
 Estimated monthly costs (Australia Southeast):
+
 - VPN Gateway (VpnGw1): ~$140 AUD
 - Azure Firewall (Standard): ~$950 AUD
 - Key Vault: ~$3 AUD
 - **Total**: ~$1,100 AUD/month
 
+**Note**: Primary costs are VPN Gateway and Azure Firewall. Remove VPN Gateway if hybrid connectivity not needed to reduce costs significantly.
+
 ### Regions
+
 Tested in Australia Southeast. Update `location` variable for other regions.
 
 ### Policies
+
 Consider implementing Azure Policy for:
+
 - Required tags enforcement
 - Allowed VM sizes
 - Network security compliance
