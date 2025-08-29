@@ -1,7 +1,7 @@
 # Azure Hub-Spoke Landing Zone
 
-[![Terraform CI](https://github.com/USERNAME/Azure-hubspoke-landingzone/workflows/Terraform%20CI/badge.svg)](https://github.com/USERNAME/Azure-hubspoke-landingzone/actions)
-[![Release](https://img.shields.io/github/v/release/USERNAME/Azure-hubspoke-landingzone)](https://github.com/USERNAME/Azure-hubspoke-landingzone/releases)
+[![Terraform CI](https://github.com/Simodalstix/Azure-hub-spoke-vpn/workflows/Terraform%20CI/badge.svg)](https://github.com/Simodalstix/Azure-hub-spoke-vpn/actions)
+[![Release](https://img.shields.io/github/v/release/Simodalstix/Azure-hub-spoke-vpn)](https://github.com/Simodalstix/Azure-hub-spoke-vpn/releases)
 [![Terraform](https://img.shields.io/badge/Terraform-1.5+-623CE4?logo=terraform)](https://www.terraform.io/)
 [![Azure](https://img.shields.io/badge/Azure-Cloud-0078D4?logo=microsoft-azure)](https://azure.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
